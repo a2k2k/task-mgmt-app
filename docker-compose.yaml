@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # Backend Service
+  task-mgmt-api-service:
+    extends:
+      file: tools/docker/common-compose.yaml
+      service: common
+    command: npm run task-mgmt-api-service:dev:docker
+    ports:
+      - 3001:3000
+      - 9221:9221
+    environment:
+      - DATABASE_URI=mongodb://mongodb:27017/test
+    depends_on:
+      - mongodb
+
+  # UI
+  ui:
+    extends:
+      file: tools/docker/common-compose.yaml
+      service: common
+    command: npm run ui:dev:docker
+    ports:
+      - 4200:4200
+
+  # Mongo
+  mongodb:
+    image: mongo:latest
+    environment:
+      - MONGODB_DATABASE="test"
+    ports:
+      - 27017:27017
+    volumes:
+      - ./db-data:/data/db
+    networks:
+      - services-network
+
+volumes:
+  shared-node-modules:
+
+networks:
+  services-network:
+    driver: bridge

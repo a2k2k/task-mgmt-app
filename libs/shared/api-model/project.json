@@ -1,0 +1,26 @@
+{
+  "name": "shared-api-model",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/shared/api-model/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/shared/api-model",
+        "main": "libs/shared/api-model/src/index.ts",
+        "tsConfig": "libs/shared/api-model/tsconfig.lib.json",
+        "assets": ["libs/shared/api-model/*.md"]
+      }
+    },
+    "lint": {
+      "executor": "@nx/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["libs/shared/api-model/**/*.ts", "libs/shared/api-model/package.json"]
+      }
+    }
+  },
+  "tags": []
+}

@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  common:
+    restart: always
+    build:
+      context: ../..
+      args:
+        DOCKER_BUILDKIT: 1
+      dockerfile: tools/docker/dev.Dockerfile
+      network: host
+    environment:
+      - DEV_PLATFORM=DOCKER
+    volumes:
+      - ../..:/code
+      - shared-node-modules:/code/node_modules
+    networks:
+      - services-network
