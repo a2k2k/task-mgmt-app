@@ -19,3 +19,4 @@ export * from './lib/dto/project.dto';
 export * from './lib/internal-models/enums';
 export * from './lib/dto/add-project-member.dto';
 export * from './lib/dto/project-member.dto';
+export * from './lib/utils/Utils';

@@ -1,3 +1,4 @@
+import { EntityRef } from "./common.dto";
 
 export interface TaskDTO {
     id: string;
@@ -7,8 +8,8 @@ export interface TaskDTO {
     start_date?: number;
     end_date?: number;
     assignee: string;
-    createdBy: string;
-    modifiedBy: string;
+    createdBy: EntityRef;
+    modifiedBy: EntityRef;
     dateCreated: number;
     dateModified: number;
     impediment?: boolean;

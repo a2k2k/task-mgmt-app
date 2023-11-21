@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import mongoose from 'mongoose';
 
-import { Document } from 'mongoose';
+import { Document, Schema as MSchema } from 'mongoose';
+import { User } from './user';
 
 export type ProjectDocument = Project & Document;
 
@@ -16,14 +17,14 @@ export class Project {
   @Prop({ required: true })
   dateCreated!: number;
 
-  @Prop({ required: true })
-  createdBy!: mongoose.Types.ObjectId;
+  @Prop({ required: true, type: MSchema.Types.ObjectId, ref: 'User' })
+  createdBy!: User | any;
 
   @Prop({ required: true })
   dateModified!: number;
 
-  @Prop({ required: true })
-  modifiedBy!: mongoose.Types.ObjectId;
+  @Prop({ required: true, type: MSchema.Types.ObjectId, ref: 'User' })
+  modifiedBy!: User | any;
 
   @Prop({ required: true })
   active!: boolean;

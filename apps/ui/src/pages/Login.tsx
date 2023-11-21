@@ -10,22 +10,24 @@ import { LoginRequest } from '@tma/shared/api-model';
 function LoginPage() {
   const links = PublicHeaderItems.filter((link) => link.label === 'Home');
   const [error, setError] = useState(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [loginDetails] = useState<any>({});
   const navigate = useNavigate();
   const { login } = useAuth();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const loginDetails: any = {};
   function onChange(e: ChangeEvent) {
     const el = e.target as HTMLInputElement;
     loginDetails[el.name] = el.value;
   }
   function doLogin(e: FormEvent) {
     e.preventDefault();
+    setError(null);
     login(loginDetails as LoginRequest)
       .then((res) => {
-        navigate('/app');
+        navigate('/app/projects');
       })
       .catch((err) => {
-        setError(err);
+        setError(err.message ? err.message : 'Invalid username/password');
       });
   }
   return (
@@ -37,7 +39,7 @@ function LoginPage() {
           Login
         </h3>
         <Card className="max-w-sm">
-          {error ? <div className="login-error">{error}</div> : ''}
+          {error ? <div className="text-red-500 text-sm">{error}</div> : ''}
           <form className="flex flex-col gap-4">
             <div>
               <div className="mb-2 block">

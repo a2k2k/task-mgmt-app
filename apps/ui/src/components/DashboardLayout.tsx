@@ -31,7 +31,9 @@ function DashboardLayout() {
     return <Loader />;
   }
   if (!loggedIn) {
-    navigate('/login');
+    setTimeout(() => {
+      navigate('/login');
+    }, 0);
     return '';
   }
   return (
@@ -42,13 +44,6 @@ function DashboardLayout() {
           <Sidebar aria-label="App Sidebar">
             <Sidebar.Items>
               <Sidebar.ItemGroup>
-                <Sidebar.Item
-                  href="/app"
-                  onClick={(e: Event) => handleNavigate(e, '/app')}
-                  icon={HiChartPie}
-                >
-                  Dashboard
-                </Sidebar.Item>
                 <Sidebar.Item
                   href="/app/projects"
                   onClick={(e: Event) => handleNavigate(e, '/app/projects')}
@@ -67,7 +62,7 @@ function DashboardLayout() {
             </Sidebar.Items>
           </Sidebar>
         </div>
-        <div className="bg-slate-50 min-h-[600px] block w-3/4">
+        <div className="border-slate-200 min-h-[600px] block w-3/4 h-[1px]">
           <Outlet />
         </div>
       </div>

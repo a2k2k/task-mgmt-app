@@ -12,12 +12,18 @@ import {
 import mongoose, { Model } from 'mongoose';
 import { Project, ProjectDocument } from '../../entities/project.entity';
 import { ProjectMemberService } from './project-member.service';
+import { User, UserDocument } from '../../entities/user';
+import { TasksService } from '../tasks/tasks.service';
+import { Task, TaskDocument } from '../../entities/task.entity';
 
 @Injectable()
 export class ProjectsService {
   constructor(
     @InjectModel(Project.name) private readonly model: Model<ProjectDocument>,
-    private readonly memberService: ProjectMemberService
+    private readonly memberService: ProjectMemberService,
+    @InjectModel(User.name)
+    private readonly userModel: Model<UserDocument>,
+    @InjectModel(Task.name) private readonly taskModel: Model<TaskDocument>
   ) {}
 
   async create(
@@ -64,7 +70,11 @@ export class ProjectsService {
   }
 
   async getProject(id: string, userId: string): Promise<ProjectDTO | null> {
-    const projectDoc = await this.model.findById(id).exec();
+    const projectDoc = await this.model
+      .findById(id)
+      .populate('createdBy', '_id name email username')
+      .populate('modifiedBy', '_id name email username')
+      .exec();
     if (projectDoc == null) {
       throw new NotFoundException();
     }
@@ -83,7 +93,8 @@ export class ProjectsService {
     }
     await this.memberService.checkProjectAccess(projectDoc.id, userId);
     projectDoc.dateModified = Date.now();
-    projectDoc.modifiedBy = new mongoose.Types.ObjectId(userId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    projectDoc.modifiedBy = new mongoose.Types.ObjectId(userId) as any;
     projectDoc.name = updateProjectDto.name;
     projectDoc.description = updateProjectDto.description as string;
     projectDoc.active = updateProjectDto.active;
@@ -100,11 +111,12 @@ export class ProjectsService {
     }
     await this.memberService.checkProjectAccess(projectDoc.id, userId);
     const delResult = await this.model.deleteOne({ id: id }).exec();
+    await this.taskModel.deleteMany({ projectId: id });
     await this.memberService.deleteProjectEntries(projectDoc.id);
     return Promise.resolve(delResult.deletedCount == 1);
   }
 
-  async getMembers(id: string, userId: string): Promise<ProjectMemberDTO> {
+  async getMembers(id: string, userId: string): Promise<ProjectMemberDTO[]> {
     await this.memberService.checkProjectAccess(id, userId, false);
     return this.memberService.getProjectMembers(id);
   }
@@ -132,10 +144,16 @@ export class ProjectsService {
       ? null
       : {
           id: projectDoc._id,
-          createdBy: projectDoc.createdBy.toString(),
+          createdBy: {
+            id: projectDoc.createdBy._id,
+            name: projectDoc.createdBy.name,
+          },
           dateCreated: projectDoc.dateCreated,
           dateModified: projectDoc.dateModified,
-          modifiedBy: projectDoc.modifiedBy.toString(),
+          modifiedBy: {
+            id: projectDoc.modifiedBy._id,
+            name: projectDoc.modifiedBy.name,
+          },
           description: projectDoc.description,
           name: projectDoc.name,
           category: projectDoc.category as string,

@@ -27,7 +27,14 @@ export async function httpGet<T>(
   return fetch(url, {
     headers: buildHttpHeaders(false, headers),
     signal: abortSignal,
-  }).then((res) => res.json());
+  }).then((res) => {
+    if (res.status !== 200) {
+      return res.json().then((err) => {
+        throw err;
+      });
+    }
+    return res.json();
+  });
 }
 
 export async function httpPOST<X, T>(
@@ -35,13 +42,21 @@ export async function httpPOST<X, T>(
   body: X,
   abortSignal?: AbortSignal,
   headers?: { [name: string]: string }
-): Promise<T> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): Promise<T | any> {
   return fetch(url, {
     method: 'POST',
     headers: buildHttpHeaders(true, headers),
     signal: abortSignal,
-    body: JSON.stringify(body)
-  }).then((res) => res.json());
+    body: JSON.stringify(body),
+  }).then((res) => {
+    if (!(res.status >= 200 && res.status < 300)) {
+      return res.json().then((err) => {
+        throw err;
+      });
+    }
+    return res;
+  });
 }
 
 export async function httpPUT<X, T>(
@@ -54,10 +69,34 @@ export async function httpPUT<X, T>(
     method: 'PUT',
     headers: buildHttpHeaders(true, headers),
     signal: abortSignal,
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
+  }).then((res) => res.json());
+}
+export async function httpDelete<T>(
+  url: string,
+  abortSignal?: AbortSignal,
+  headers?: { [name: string]: string }
+): Promise<T> {
+  return fetch(url, {
+    method: 'DELETE',
+    headers: buildHttpHeaders(true, headers),
+    signal: abortSignal,
   }).then((res) => res.json());
 }
 
+export async function httpPatch<X, T>(
+  url: string,
+  body: X,
+  abortSignal?: AbortSignal,
+  headers?: { [name: string]: string }
+): Promise<T> {
+  return fetch(url, {
+    method: 'PATCH',
+    headers: buildHttpHeaders(true, headers),
+    signal: abortSignal,
+    body: JSON.stringify(body),
+  }).then((res) => res.json());
+}
 export function formatDate(date?: number | null) {
-  return moment(date).format('yyyy-MM-dd HH:mm:ss');
+  return moment(date).format('yyyy-MM-DD HH:mm:ss');
 }

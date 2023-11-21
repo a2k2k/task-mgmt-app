@@ -6,10 +6,12 @@ import {
   TaskDTO,
   TaskStatus,
   ListResponse,
+  GenericSuccessResponse,
 } from '@tma/shared/api-model';
 import mongoose, { Model } from 'mongoose';
 import { Task, TaskDocument } from '../../entities/task.entity';
 import { ProjectMemberService } from '../project/project-member.service';
+import { User, UserDocument } from '../../entities/user';
 
 @Injectable()
 export class TasksService {
@@ -25,7 +27,7 @@ export class TasksService {
   ): Promise<TaskDTO> {
     this.memberService.checkProjectAccess(projectId, userId, false);
     const task = new Task();
-    task.projectId = new mongoose.Types.ObjectId(projectId);
+    task.projectId = projectId;
     task.name = createTaskDto.name;
     task.dateCreated = Date.now();
     task.dateModified = task.dateCreated;
@@ -56,6 +58,10 @@ export class TasksService {
       .find(filters)
       .skip(offset)
       .limit(limit)
+      .populate([
+        { path: 'createdBy', select: '_id name email username' },
+        { path: 'modifiedBy', select: '_id name email username' },
+      ])
       .exec();
     return Promise.resolve({
       items: taskDocs.map(
@@ -71,7 +77,10 @@ export class TasksService {
     userId: string
   ): Promise<TaskDTO | null> {
     this.memberService.checkProjectAccess(projectId, userId, false);
-    const taskDoc = await this.model.findById(id).exec();
+    const taskDoc = await this.model
+      .findById(id)
+      .populate(['createdBy', 'updatedBy'], '_id name email username')
+      .exec();
     return Promise.resolve(this.mapTaskEntityToDTO(taskDoc));
   }
 
@@ -94,6 +103,7 @@ export class TasksService {
     taskDoc.name = updatedTaskDto.name;
     taskDoc.description = updatedTaskDto.description;
     if (updatedTaskDto.status != taskDoc.status) {
+      taskDoc.status = updatedTaskDto.status;
       switch (updatedTaskDto.status as TaskStatus) {
         case TaskStatus.InProgress:
           if (taskDoc.startDate == null) {
@@ -119,10 +129,13 @@ export class TasksService {
     id: string,
     projectId: string,
     userId: string
-  ): Promise<boolean> {
+  ): Promise<GenericSuccessResponse> {
     this.memberService.checkProjectAccess(projectId, userId);
-    const delResult = await this.model.deleteOne({ id: id }).exec();
-    return Promise.resolve(delResult.deletedCount == 1);
+    const delResult = await this.model.deleteOne({ _id: id }).exec();
+    if (delResult.deletedCount !== 1) {
+      throw new NotFoundException();
+    }
+    return Promise.resolve({ result: 'success' });
   }
 
   private mapTaskEntityToDTO(taskDoc: TaskDocument | null): TaskDTO | null {
@@ -131,10 +144,16 @@ export class TasksService {
       : {
           id: taskDoc._id,
           assignee: taskDoc.assignee,
-          createdBy: taskDoc.createdBy.toString(),
+          createdBy: {
+            id: (taskDoc.createdBy as UserDocument)._id,
+            name: (taskDoc.createdBy as UserDocument).name,
+          },
           dateCreated: taskDoc.dateCreated,
           dateModified: taskDoc.dateModified,
-          modifiedBy: taskDoc.modifiedBy.toString(),
+          modifiedBy: {
+            id: (taskDoc.modifiedBy as UserDocument)._id,
+            name: (taskDoc.modifiedBy as UserDocument).name,
+          },
           status: taskDoc.status,
           start_date: taskDoc.startDate,
           end_date: taskDoc.endDate,

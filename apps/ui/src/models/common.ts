@@ -19,7 +19,8 @@ export interface FormField {
   required?: boolean;
   label: string;
   data?: ComboOption[];
-  extraOptions: {
+  disabled?: boolean;
+  extraOptions?: {
     placeholder?: string;
     numRows?: number;
   };

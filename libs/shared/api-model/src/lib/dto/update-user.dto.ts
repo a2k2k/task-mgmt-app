@@ -3,4 +3,6 @@ export interface UpdateUserDTO {
     email: string;
     country: string;
     phone: number;
+    admin: boolean;
+    password?: string;
 }

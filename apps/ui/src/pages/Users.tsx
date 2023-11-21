@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Button, Modal, Pagination, Table } from 'flowbite-react';
 import { useEffect, useState } from 'react';
 import { ListResponse, UserDetails } from '@tma/shared/api-model';
@@ -8,6 +9,8 @@ import ManifestForm from '../components/ManifestForm';
 import { formatDate } from '../utils/Utils';
 import Loader from '../components/Loader';
 import { UsersAPIService } from '../services/UsersAPIService';
+import ConfirmDialog from '../components/ConfirmDialog';
+import UserDialog from '../components/UserDialog';
 
 function Users() {
   const [users, setUsers] = useState<UserDetails[]>([]);
@@ -15,20 +18,31 @@ function Users() {
   const [totalPages, setTotalPages] = useState(0);
   const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>();
-  const [showCreate, setShowCreate] = useState(false);
+  const [refresh, setRefresh] = useState<boolean>(false);
+  const [showDialog, setShowDialog] = useState(false);
+  const [editData, setEditData] = useState<any>();
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     setError(null);
     setLoading(true);
+    setRefresh(false);
     const abortController = new AbortController();
     const offset = (page - 1) * LIMIT;
+    let unmounted = false;
     UsersAPIService.getUsers(offset, LIMIT, abortController.signal)
       .then((userList: ListResponse<UserDetails>) => {
+        if (unmounted) {
+          return;
+        }
         setUsers(userList.items);
         setTotalPages(Math.floor((userList.totalItems - 1) / LIMIT) + 1);
         setLoading(false);
       })
       .catch((err) => {
+        if (unmounted) {
+          return;
+        }
         setLoading(false);
         if (page === 0) {
           setTotalPages(0);
@@ -36,23 +50,69 @@ function Users() {
         setError('There was a problem loading users. Please try again.');
       });
     return () => {
+      unmounted = true;
       abortController.abort();
     };
-  }, [page]);
+  }, [page, refresh]);
   function onPageChange(page: number) {
     setPage(page);
   }
   function handleDialogButton(
     id: string,
-    data: { [name: string]: string } | null
+    data: any,
+    errFn: (errorMsg: string) => void
   ) {
-    setShowCreate(false);
     if (id === 'create') {
-      UsersAPIService.createUser(data as any);
+      data.username = data.email;
+      data.admin = data.admin === true || data.admin === 'true';
+      UsersAPIService.createUser(data)
+        .then(() => {
+          setShowDialog(false);
+          setRefresh(true);
+        })
+        .catch((err) => {
+          errFn(err.message);
+        });
+    } else if (id === 'update') {
+      data.username = data.email;
+      data.admin = data.admin === true || data.admin === 'true';
+      UsersAPIService.updateUser(data.id, data)
+        .then(() => {
+          setShowDialog(false);
+          setRefresh(true);
+        })
+        .catch((err) => {
+          errFn(err.message);
+        });
+    } else {
+      setShowDialog(false);
     }
   }
   function openCreateDialog() {
-    setShowCreate(true);
+    setShowDialog(true);
+  }
+  function handleAction(id: string, user: UserDetails) {
+    switch (id) {
+      case 'edit':
+        setEditData(user);
+        setShowDialog(true);
+        break;
+      case 'delete':
+        setEditData(user);
+        setShowConfirm(true);
+        break;
+    }
+  }
+  function handleDeleteConfirm(id: string) {
+    const user = editData;
+    setEditData(null);
+    setShowConfirm(false);
+    if (id === 'ok') {
+      UsersAPIService.deleteUser(user.id).then(() => {
+        setPage(1);
+        setRefresh(true);
+      });
+    }
   }
   return (
     <div className="h-full relative">
@@ -73,7 +133,7 @@ function Users() {
           </div>
         </div>
       ) : (
-        <TableView users={users} />
+        <TableView users={users} actionHandler={handleAction} />
       )}
       <br />
       {totalPages > 0 ? (
@@ -87,8 +147,19 @@ function Users() {
       ) : (
         ''
       )}
-      {showCreate ? (
-        <CreateUserDialog handleButton={handleDialogButton}></CreateUserDialog>
+      {showDialog ? (
+        <UserDialog
+          data={editData}
+          handleButton={handleDialogButton}
+        ></UserDialog>
+      ) : (
+        ''
+      )}
+      {showConfirm ? (
+        <ConfirmDialog
+          msg={'Are you sure you want to delete the selected user?'}
+          actionHandler={handleDeleteConfirm}
+        />
       ) : (
         ''
       )}
@@ -96,13 +167,19 @@ function Users() {
   );
 }
 
-function TableView({ users }: { users: UserDetails[] }) {
+function TableView({
+  users,
+  actionHandler,
+}: {
+  users: UserDetails[];
+  actionHandler: (aId: string, user: UserDetails) => void;
+}) {
   return (
     <Table>
       <Table.Head>
         <Table.HeadCell>Name</Table.HeadCell>
         <Table.HeadCell>Email</Table.HeadCell>
-        <Table.HeadCell>Username</Table.HeadCell>
+        <Table.HeadCell>Admin</Table.HeadCell>
         <Table.HeadCell>Date Created</Table.HeadCell>
         <Table.HeadCell>
           <span className="sr-only">Modify</span>
@@ -119,88 +196,25 @@ function TableView({ users }: { users: UserDetails[] }) {
                 {user.name}
               </Table.Cell>
               <Table.Cell>{user.email}</Table.Cell>
-              <Table.Cell>{user.username}</Table.Cell>
+              <Table.Cell>{user.admin ? 'Yes' : 'No'}</Table.Cell>
               <Table.Cell>{formatDate(user.dateCreated)}</Table.Cell>
               <Table.Cell>
-                <HiPencilAlt className="mr-2 h-5 w-5" />
-                <HiTrash className="mr-2 h-5 w-5" />
+                <div className="flex flex-row gap-2 cursor-pointer">
+                  <HiPencilAlt
+                    className="mr-2 h-5 w-5"
+                    onClick={() => actionHandler('edit', user)}
+                  />
+                  <HiTrash
+                    className="mr-2 h-5 w-5"
+                    onClick={() => actionHandler('delete', user)}
+                  />
+                </div>
               </Table.Cell>
             </Table.Row>
           );
         })}
       </Table.Body>
     </Table>
-  );
-}
-
-function CreateUserDialog({
-  handleButton,
-}: {
-  handleButton: (id: string, data: { [name: string]: string } | null) => void;
-}) {
-  const [openModal, setOpenModal] = useState(true);
-  function doHandleButton(id: string, data: { [name: string]: string } | null) {
-    setOpenModal(false);
-    handleButton(id, data);
-  }
-  const formData: FormDataMap = {};
-  const manifest: FormManifest = {
-    buttons: [],
-    id: 'signup',
-    fieldGroups: [
-      {
-        fields: [
-          {
-            name: 'fullname',
-            type: 'text',
-            label: 'Full Name',
-            extraOptions: { placeholder: 'Full Name' },
-          },
-          {
-            name: 'email',
-            type: 'text',
-            label: 'Email',
-            extraOptions: { placeholder: 'Email' },
-          },
-          {
-            name: 'username',
-            type: 'text',
-            label: 'Username',
-            extraOptions: { placeholder: 'Username' },
-          },
-          {
-            name: 'password',
-            type: 'password',
-            label: 'Password',
-            extraOptions: { placeholder: 'Password' },
-          },
-          {
-            name: 'company',
-            type: 'text',
-            label: 'Company',
-            extraOptions: { placeholder: 'Company' },
-          },
-        ],
-      },
-    ],
-  };
-  return (
-    <Modal show={openModal} onClose={() => setOpenModal(false)}>
-      <Modal.Header>Create User</Modal.Header>
-      <Modal.Body>
-        <div className="space-y-6">
-          <ManifestForm data={formData} manifest={manifest} />
-        </div>
-      </Modal.Body>
-      <Modal.Footer>
-        <Button onClick={() => doHandleButton('create', formData)}>
-          Create
-        </Button>
-        <Button color="gray" onClick={() => doHandleButton('cancel', null)}>
-          Cancel
-        </Button>
-      </Modal.Footer>
-    </Modal>
   );
 }
 

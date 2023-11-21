@@ -10,6 +10,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import './Signup.css';
 import { CreateUserDTO } from '@tma/shared/api-model';
+import { useState } from 'react';
 
 function SignupPage() {
   const links = PublicHeaderItems.filter((link) => link.label === 'Home');
@@ -26,16 +27,16 @@ function SignupPage() {
       {
         fields: [
           {
-            name: 'fullname',
+            name: 'name',
             type: 'text',
             label: 'Full Name',
             extraOptions: { placeholder: 'Full Name' },
           },
           {
-            name: 'username',
+            name: 'email',
             type: 'text',
-            label: 'Username',
-            extraOptions: { placeholder: 'Username' },
+            label: 'Email',
+            extraOptions: { placeholder: 'Email' },
           },
           {
             name: 'password',
@@ -44,7 +45,7 @@ function SignupPage() {
             extraOptions: { placeholder: 'Password' },
           },
           {
-            name: 'company',
+            name: 'organization',
             type: 'text',
             label: 'Company Name',
             extraOptions: { placeholder: 'Company' },
@@ -56,11 +57,18 @@ function SignupPage() {
   const formData = {};
   const { signup } = useAuth();
   const navigate = useNavigate();
+  const [error, setError] = useState();
   function handleClick(_btn: ButtonDescriptor, fd: FormDataMap) {
     if (_btn.id === 'signup') {
-      signup(fd as unknown as CreateUserDTO).then(() => {
-        navigate('/login');
-      });
+      fd.username = fd.email;
+      Object.assign(formData, fd);
+      signup(fd as unknown as CreateUserDTO)
+        .then(() => {
+          navigate('/login');
+        })
+        .catch((err) => {
+          setError(err.message);
+        });
     }
   }
   return (
@@ -71,6 +79,11 @@ function SignupPage() {
           <h3 className="mb-4 text-xl font-extrabold tracking-tight leading-none text-gray-900 md:text-xl lg:text-2xl dark:text-white">
             Signup
           </h3>
+          {error ? (
+            <div className="text-red-500 text-sm pb-3">{error}</div>
+          ) : (
+            ''
+          )}
           <ManifestForm
             manifest={manifest}
             data={formData}

@@ -17,7 +17,14 @@ export const AuthAPIService = {
       },
       signal: abortSignal,
       body: JSON.stringify(userLoginRequest),
-    }).then((res) => res.json());
+    }).then((res) => {
+      if (res.status !== 200) {
+        return res.json().then((err) => {
+          throw err;
+        });
+      }
+      return res.json();
+    });
   },
   signup: async (signupRequest: CreateUserDTO, abortSignal?: AbortSignal) => {
     return fetch(`${BASE_API_URL}/signup`, {
@@ -27,6 +34,13 @@ export const AuthAPIService = {
       },
       signal: abortSignal,
       body: JSON.stringify(signupRequest),
-    }).then((res) => res.json());
+    }).then((res) => {
+      if (res.status !== 201) {
+        return res.json().then((err) => {
+          throw err;
+        });
+      }
+      return res.json();
+    });
   },
 };

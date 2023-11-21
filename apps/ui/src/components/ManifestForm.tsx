@@ -28,7 +28,8 @@ function ManifestForm({
   function onChangeHandler(e: ChangeEvent) {
     const el = e.target as HTMLFormElement;
     const name: string = el.getAttribute('id') as string;
-    const value = el.value;
+    const value =
+      el.getAttribute('type') === 'checkbox' ? el.value === 'on' : el.value;
     data[name] = value;
   }
   function renderField(field: FormField) {
@@ -38,14 +39,22 @@ function ManifestForm({
     }
     const commonLabel = (
       <div className="mb-2 block">
-        <Label htmlFor={field.name} value={field.label} />
+        <Label
+          htmlFor={field.name}
+          className="font-semibold font-sm"
+          value={field.label}
+        />
       </div>
     );
     switch (field.type) {
       case 'checkbox':
         return (
           <div className="flex items-center gap-2">
-            <Checkbox id={field.name} />
+            <Checkbox
+              id={field.name}
+              defaultChecked={'' + fieldValue === 'true'}
+              onChange={onChangeHandler}
+            />
             <Label htmlFor={field.name}>{field.label}</Label>
           </div>
         );
@@ -59,8 +68,9 @@ function ManifestForm({
               type={field.type}
               placeholder={field.extraOptions?.placeholder}
               required={field.required}
-              value={fieldValue}
+              defaultValue={fieldValue}
               shadow
+              disabled={field.disabled === true}
               onChange={onChangeHandler}
             />
           </>
@@ -72,7 +82,7 @@ function ManifestForm({
             <Textarea
               id={field.name}
               placeholder={field.extraOptions?.placeholder}
-              value={fieldValue}
+              defaultValue={fieldValue}
               required={field.required}
               onChange={onChangeHandler}
               rows={4}
@@ -83,9 +93,18 @@ function ManifestForm({
         return (
           <>
             {commonLabel}
-            <Select id={field.name} required={field.required}>
-              {field.data?.map((op) => {
-                return <option value={op.value}>{op.label}</option>;
+            <Select
+              id={field.name}
+              defaultValue={fieldValue}
+              required={field.required}
+              onChange={onChangeHandler}
+            >
+              {field.data?.map((op, index) => {
+                return (
+                  <option key={`op-${index}`} value={op.value}>
+                    {op.label}
+                  </option>
+                );
               })}
             </Select>
           </>
@@ -110,7 +129,10 @@ function ManifestForm({
         <div className="mform-body">
           {manifest.fieldGroups.map((group, index) => {
             return (
-              <div className="mform-group" key={`mform-group-${index}`}>
+              <div
+                className="mform-group flex flex-col gap-3"
+                key={`mform-group-${index}`}
+              >
                 {group.fields.map((field, idx) => {
                   return (
                     <div key={`mform-field-${idx}`}>{renderField(field)}</div>

@@ -9,6 +9,7 @@ import { AuthProvider } from './hooks/useAuth';
 import { CookiesProvider } from 'react-cookie';
 import Projects from './pages/Projects';
 import Users from './pages/Users';
+import ProjectDetails from './pages/ProjectDetails';
 
 function App() {
   return (
@@ -19,8 +20,8 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/app" element={<DashboardLayout />}>
-            <Route index element={<Dashboard />} />
             <Route path="projects" element={<Projects />} />
+            <Route path="projects/:projectId" element={<ProjectDetails />} />
             <Route path="users" element={<Users />} />
           </Route>
           <Route path="*" element={<NotFound />} />

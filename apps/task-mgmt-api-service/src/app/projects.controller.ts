@@ -19,6 +19,7 @@ import {
   JwtTokenData,
   UpdateProjectDTO,
   UpdateTaskDto,
+  createFilter,
 } from '@tma/shared/api-model';
 
 @UseGuards(JwtAuthGuard)
@@ -43,13 +44,7 @@ export class ProjectsController {
   ) {
     const offset = query.offset ? parseInt(query.offset) : 0;
     const limit = query.limit ? parseInt(query.limit) : 10;
-    const filter = {};
-    if (query.filter) {
-      query.filter.split('::').forEach((f) => {
-        const nv = f.split('=', 2);
-        filter[nv[0]] = nv[1];
-      });
-    }
+    const filter = createFilter(query.filter);
     return this.projectsService.findAll(user.user_id, offset, limit, filter);
   }
 
@@ -80,13 +75,7 @@ export class ProjectsController {
   ) {
     const offset = query.offset ? parseInt(query.offset) : 0;
     const limit = query.limit ? parseInt(query.limit) : 10;
-    const filter = {};
-    if (query.filter) {
-      query.filter.split('::').forEach((f) => {
-        const nv = f.split('=', 2);
-        filter[nv[0]] = nv[1];
-      });
-    }
+    const filter = createFilter(query.filter);
     return this.tasksService.findAll(
       projectId,
       user.user_id,
@@ -151,16 +140,12 @@ export class ProjectsController {
       addMemberDTO
     );
   }
-  @Delete(':id/members')
+  @Delete(':id/members/:memberId')
   async removeMember(
     @CurrentUser() user: JwtTokenData,
     @Param('id') projectId: string,
-    @Query() query: { memberId: string }
+    @Param('memberId') memberId: string
   ) {
-    return this.projectsService.removeMember(
-      user.user_id,
-      projectId,
-      query.memberId
-    );
+    return this.projectsService.removeMember(user.user_id, projectId, memberId);
   }
 }

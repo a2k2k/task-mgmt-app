@@ -27,6 +27,9 @@ export class User {
 
   @Prop()
   admin!: boolean;
+  
+  @Prop()
+  organization!: string;
 }
 
 export type UserDocument = User & Document;

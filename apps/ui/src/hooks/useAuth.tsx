@@ -44,6 +44,9 @@ function useAuthService(): any {
     if (token == null) {
       return Promise.resolve(null);
     }
+    if (GlobalContext.get('access_token') !== token) {
+      GlobalContext.set('access_token', token);
+    }
     if (user != null) {
       return user;
     }
@@ -75,14 +78,16 @@ function useAuthService(): any {
       .then(() => {
         return Promise.resolve({ status: 'OK' });
       })
-      .catch((err) => Promise.resolve({ status: 'ERROR', error: err }));
+      .catch((err) => Promise.reject(err));
   }
 
   function signout() {
     removeCookie('Access-Token');
     GlobalContext.remove('access_token');
     setUser(null);
-    navigate('/');
+    setTimeout(() => {
+      navigate('/');
+    });
   }
 
   function getToken() {

@@ -17,4 +17,5 @@ export interface UserDetails {
 
     admin: boolean;
 
+    organization: string;
   }

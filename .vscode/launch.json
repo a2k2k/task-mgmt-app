@@ -7,10 +7,12 @@
         {
             "type": "node",
             "request": "attach",
-            "websocketAddress": "ws://localhost:9229/a25f0f34-0b96-4b5f-872d-669a0fce0a65",
+            "port": 9222,
+            "remoteRoot": "/code/",
+            "sourceMaps": true,
             "localRoot": "${workspaceFolder}",
             "cwd": "${workspaceFolder}",
-            "name": "task-management-api-service",
+            "name": "task-mgmt-api-service",
         }
     ]
 }
